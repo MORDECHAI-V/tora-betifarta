@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>יומן חתונות - ישיבת תורה בתפארתה ק''ב תשפ''ז</title>
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1e3a8a;
+            --primary-light: #3b82f6;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-secondary: #64748b;
+            --border: #e2e8f0;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Heebo', sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-main); padding: 20px; direction: rtl; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        header { background: linear-gradient(135deg, #1e3a8a 0%, #312e81 100%); color: white; padding: 30px; border-radius: 16px; text-align: center; margin-bottom: 30px; box-shadow: 0 10px 25px -5px rgba(30, 58, 138, 0.3); }
+        header h1 { font-size: 2.2rem; margin-bottom: 10px; font-weight: 900; }
+        .controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; flex-wrap: wrap; gap: 15px; }
+        .btn { background-color: var(--primary-light); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 1rem; transition: all 0.2s; }
+        .btn:hover { background-color: var(--primary); transform: translateY(-2px); }
+        .btn:disabled { background-color: #94a3b8; cursor: not-allowed; transform: none; }
+        .search-box { padding: 12px 20px; border-radius: 8px; border: 1px solid var(--border); width: 300px; font-size: 1rem; outline: none; }
+        .section-title { font-size: 1.5rem; color: var(--primary); margin: 35px 0 20px 0; padding-bottom: 8px; border-bottom: 3px solid var(--primary-light); }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 20px; }
+        .card { background: var(--card-bg); border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid var(--border); position: relative; }
+        .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+        .groom-name { font-size: 1.3rem; font-weight: 700; color: var(--primary); }
+        .wedding-day { background: #eff6ff; color: var(--primary-light); padding: 4px 10px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; }
+        .card-body { display: flex; flex-direction: column; gap: 8px; font-size: 0.95rem; margin-bottom: 15px; }
+        .info-row { display: flex; justify-content: space-between; }
+        .info-label { color: var(--text-secondary); font-weight: 500; }
+        .info-value { font-weight: 600; color: var(--text-main); text-align: left; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; padding: 20px; }
+        .modal-content { background: white; padding: 30px; border-radius: 16px; width: 100%; max-width: 550px; max-height: 90vh; overflow-y: auto; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 0.9rem; }
+        .form-group input, .form-group select { width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 1rem; outline: none; }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 25px; }
+        .loading { text-align: center; padding: 20px; font-weight: bold; color: var(--text-secondary); width: 100%; grid-column: 1 / -1; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>יומן חתונות ישיבת תורה בתפארתה ק''ב תשפ''ז</h1>
+            <p>מעקב וריכוז חתונות בחורי הישיבה והבוגרים</p>
+        </header>
+
+        <div class="controls">
+            <button class="btn" onclick="openModal()">+ הוסף חתונה חדשה</button>
+            <input type="text" id="searchInput" class="search-box" placeholder="חיפוש לפי חתן, אולם..." oninput="debounceSearch()">
+        </div>
+
+        <div class="section-title">🎓 בחורים בישיבה</div>
+        <div id="gridYeshiva" class="grid"><div class="loading">טוען נתונים מהשרת...</div></div>
+
+        <div class="section-title">🌟 בחורים בוגרים / חיזוק</div>
+        <div id="gridGraduates" class="grid"><div class="loading">טוען נתונים מהשרת...</div></div>
+    </div>
+
+    <div id="weddingModal" class="modal">
+        <div class="modal-content">
+            <h2>הוספת חתונה חדשה</h2>
+            <form id="weddingForm" onsubmit="saveWedding(event)">
+                <div class="form-group">
+                    <label>קטגוריה:</label>
+                    <select id="Category" required>
+                        <option value="yeshiva">בחורים בישיבה</option>
+                        <option value="graduates">בחורים בוגרים / חיזוק</option>
+                    </select>
+                </div>
+                <div class="form-group"><label>שם חתן:</label><input type="text" id="GroomName" required placeholder="למשל: יצחק שקלנובסקי"></div>
+                <div class="form-group">
+                    <label>יום בשבוע:</label>
+                    <select id="DayOfWeek" required>
+                        <option value="ראשון">ראשון</option><option value="שני">שני</option><option value="שלישי">שלישי</option><option value="רביעי">רביעי</option><option value="חמישי" selected>חמישי</option>
+                    </select>
+                </div>
+                <div class="form-group"><label>תאריך (עברי):</label><input type="text" id="WeddingDate" required placeholder="למשל: י''ט תשרי תשפ''ז"></div>
+                <div class="form-group"><label>מיקום (אולם ועיר):</label><input type="text" id="Location" required placeholder="למשל: אולמי וגשל, בני ברק"></div>
+                <div class="form-group"><label>זמן חופה:</label><input type="text" id="ChuppahTime" placeholder="19:30"></div>
+                <div class="form-group"><label>זמן ריקודים ראשונים:</label><input type="text" id="FirstDance" placeholder="20:45"></div>
+                <div class="form-group"><label>זמן ריקודים שניים:</label><input type="text" id="SecondDance" placeholder="23:00"></div>
+                <div class="form-group"><label>תזמורת:</label><input type="text" id="Orchestra" placeholder="יהודה גלילי"></div>
+                <div class="form-group"><label>זמני הסעות:</label><input type="text" id="Transportation" placeholder="הסעה יוצאת ב-18:45"></div>
+                <div class="modal-actions">
+                    <button type="button" class="btn" style="background:#e2e8f0; color:#1e293b;" onclick="closeModal()">ביטול</button>
+                    <button type="submit" id="submitBtn" class="btn">שמור חתונה</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'https://script.google.com/macros/s/AKfycbz6bbN1i0IYo-dTAbZLpS5irVQ82u96ORsqlv2wwGfCYHuINlTTne9NPGuWGX-tdOTX/exec'; 
+        
+        let weddings = [];
+
+        function escapeHTML(str) {
+            if (!str) return '-';
+            return str.toString().replace(/[&<>'"]/g, 
+                tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+            );
+        }
+
+        let searchTimeout = null;
+        function debounceSearch() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => { renderWeddings(); }, 300);
+        }
+
+        // שאיבת נתונים מגוגל שיטס בטעינת העמוד
+        async function fetchWeddingsData() {
+            if(API_URL === 'הכנס_את_הקישור_שלך_כאן') {
+                document.getElementById('gridYeshiva').innerHTML = '<div class="loading">שגיאה: לא הוגדר קישור API_URL.</div>';
+                document.getElementById('gridGraduates').innerHTML = '';
+                return;
+            }
+
+            try {
+                const response = await fetch(API_URL);
+                const data = await response.json();
+                weddings = data;
+                renderWeddings();
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                document.getElementById('gridYeshiva').innerHTML = '<div class="loading">שגיאה בטעינת הנתונים. ודא שהקישור נכון.</div>';
+                document.getElementById('gridGraduates').innerHTML = '';
+            }
+        }
+
+        function renderWeddings() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const gridYeshiva = document.getElementById('gridYeshiva');
+            const gridGraduates = document.getElementById('gridGraduates');
+
+            gridYeshiva.innerHTML = '';
+            gridGraduates.innerHTML = '';
+
+            const filtered = weddings.filter(w => 
+                (w.GroomName && w.GroomName.toLowerCase().includes(search)) ||
+                (w.Location && w.Location.toLowerCase().includes(search)) ||
+                (w.Orchestra && w.Orchestra.toLowerCase().includes(search))
+            );
+
+            let yeshivaCount = 0, graduatesCount = 0;
+
+            filtered.forEach(w => {
+                // מסנן שורות ריקות באקסל
+                if(!w.GroomName) return; 
+
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <div class="card-header">
+                        <span class="groom-name">חתן ${escapeHTML(w.GroomName)}</span>
+                        <span class="wedding-day">יום ${escapeHTML(w.DayOfWeek)} | ${escapeHTML(w.WeddingDate)}</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="info-row"><span class="info-label">מיקום:</span><span class="info-value">${escapeHTML(w.Location)}</span></div>
+                        <div class="info-row"><span class="info-label">חופה:</span><span class="info-value">${escapeHTML(w.ChuppahTime)}</span></div>
+                        <div class="info-row"><span class="info-label">ריקודים א':</span><span class="info-value">${escapeHTML(w.FirstDance)}</span></div>
+                        <div class="info-row"><span class="info-label">ריקודים ב':</span><span class="info-value">${escapeHTML(w.SecondDance)}</span></div>
+                        <div class="info-row"><span class="info-label">תזמורת:</span><span class="info-value">${escapeHTML(w.Orchestra)}</span></div>
+                        <div class="info-row"><span class="info-label">הסעות:</span><span class="info-value">${escapeHTML(w.Transportation)}</span></div>
+                    </div>
+                `;
+
+                if (w.Category === 'yeshiva') {
+                    gridYeshiva.appendChild(card);
+                    yeshivaCount++;
+                } else {
+                    gridGraduates.appendChild(card);
+                    graduatesCount++;
+                }
+            });
+
+            if (yeshivaCount === 0) gridYeshiva.innerHTML = '<div class="loading">אין חתונות להצגה בקטגוריה זו</div>';
+            if (graduatesCount === 0) gridGraduates.innerHTML = '<div class="loading">אין חתונות להצגה בקטגוריה זו</div>';
+        }
+
+        function openModal() { document.getElementById('weddingModal').style.display = 'flex'; }
+        function closeModal() { document.getElementById('weddingModal').style.display = 'none'; }
+
+        // שליחת חתונה חדשה לגוגל שיטס
+        async function saveWedding(event) {
+            event.preventDefault();
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.innerText = 'שומר...';
+
+            const newWedding = {
+                ID: 'w_' + Date.now(),
+                Category: document.getElementById('Category').value,
+                GroomName: document.getElementById('GroomName').value,
+                DayOfWeek: document.getElementById('DayOfWeek').value,
+                WeddingDate: document.getElementById('WeddingDate').value,
+                Location: document.getElementById('Location').value,
+                ChuppahTime: document.getElementById('ChuppahTime').value,
+                FirstDance: document.getElementById('FirstDance').value,
+                SecondDance: document.getElementById('SecondDance').value,
+                Orchestra: document.getElementById('Orchestra').value,
+                Transportation: document.getElementById('Transportation').value,
+                Status: 'approved'
+            };
+
+            try {
+                // שימוש ב-text/plain כדי למנוע בעיות CORS בבקשת ה-POST מול שרתי גוגל
+                await fetch(API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify(newWedding),
+                    headers: {
+                        'Content-Type': 'text/plain;charset=utf-8',
+                    }
+                });
+                
+                // הוספת הנתון מקומית כדי שלא נצטרך לחכות לרענון מהשרת
+                weddings.push(newWedding);
+                closeModal();
+                document.getElementById('weddingForm').reset();
+                renderWeddings();
+            } catch (error) {
+                console.error('Error saving data:', error);
+                alert('אירעה שגיאה בשמירת הנתונים.');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerText = 'שמור חתונה';
+            }
+        }
+
+        // טעינת הנתונים עם עליית הדף
+        fetchWeddingsData();
+    </script>
+</body>
+</html>
